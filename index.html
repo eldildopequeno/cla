@@ -20,20 +20,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        async function sendMessage() {
-            const messageInput = document.getElementById('messageInput');
-            const message = messageInput.value.trim();
+        async function sendMessage(user, message) {
             if (!message) return;
-            
-            const userId = localStorage.getItem("userId") || `Anónimo-${Math.floor(Math.random() * 10000)}`;
-            localStorage.setItem("userId", userId);
-            
             await addDoc(collection(db, "messages"), {
-                user: userId,
+                user: user,
                 text: message,
                 timestamp: Date.now()
             });
-            messageInput.value = "";
         }
 
         function timeAgo(timestamp) {
@@ -71,27 +64,47 @@
                     time.textContent = timeAgo(messageData.timestamp);
                     time.classList.add("timestamp");
                     
-                    const replyButton = document.createElement("button");
-                    replyButton.textContent = "Responder";
-                    replyButton.onclick = () => replyMessage(messageData.user);
-                    
                     messageDiv.appendChild(user);
                     messageDiv.appendChild(text);
                     messageDiv.appendChild(time);
-                    messageDiv.appendChild(replyButton);
                     messagesContainer.appendChild(messageDiv);
                 });
             });
         }
 
-        function replyMessage(user) {
-            const messageInput = document.getElementById('messageInput');
-            messageInput.value = `@${user} `;
-            messageInput.focus();
+        function startBot() {
+            const botMessages = [
+                "Me gusta Simón",
+                "Me gusta Juanse",
+                "Mariangel me da miedo",
+                "Alguien aquí tiene un secreto...",
+                "A veces hablo solo en voz alta",
+                "No sé guardar secretos",
+                "¿Alguien más tiene miedo de los exámenes?"
+            ];
+            
+            setInterval(() => {
+                const randomMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
+                sendMessage("ConfesionesBot", randomMessage);
+            }, 30000); // Cada 30 segundos
         }
 
-        window.sendMessage = sendMessage;
-        window.onload = loadMessages;
+        document.addEventListener("DOMContentLoaded", () => {
+            loadMessages();
+            startBot();
+        });
+
+        window.sendMessage = () => {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            const userId = localStorage.getItem("userId") || `Anónimo-${Math.floor(Math.random() * 10000)}`;
+            localStorage.setItem("userId", userId);
+            
+            sendMessage(userId, message);
+            messageInput.value = "";
+        };
     </script>
     <style>
         body {
@@ -169,4 +182,3 @@
     <div id="messages"></div>
 </body>
 </html>
-
