@@ -71,12 +71,23 @@
                     time.textContent = timeAgo(messageData.timestamp);
                     time.classList.add("timestamp");
                     
+                    const replyButton = document.createElement("button");
+                    replyButton.textContent = "Responder";
+                    replyButton.onclick = () => replyMessage(messageData.user);
+                    
                     messageDiv.appendChild(user);
                     messageDiv.appendChild(text);
                     messageDiv.appendChild(time);
+                    messageDiv.appendChild(replyButton);
                     messagesContainer.appendChild(messageDiv);
                 });
             });
+        }
+
+        function replyMessage(user) {
+            const messageInput = document.getElementById('messageInput');
+            messageInput.value = `@${user} `;
+            messageInput.focus();
         }
 
         window.sendMessage = sendMessage;
@@ -148,7 +159,7 @@
 <body>
     <h1>Confesiones CLA</h1>
     <audio autoplay loop>
-        <source src="https://static.wikia.nocookie.net/undertale/images/6/6c/Mus_sansdate.ogg/revision/latest?cb=20160215204526&path-prefix=es" type="audio/ogg">
+        <source src="https://static.wikia.nocookie.net/undertale/images/6/6c/Mus_sansdate.ogg" type="audio/ogg">
         Tu navegador no soporta el audio.
     </audio>
     <div class="container">
