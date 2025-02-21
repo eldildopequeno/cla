@@ -7,7 +7,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "jqEVt5ufxNbvp3QP_Paebl0ux680MNgJD8G4skDXWcM",
@@ -20,17 +19,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
-        async function sendMessage(user, message, imageUrl = "", audioUrl = "") {
-            if (!message && !imageUrl && !audioUrl) return;
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            const userId = localStorage.getItem("userId") || `Anónimo-${Math.floor(Math.random() * 10000)}`;
+            localStorage.setItem("userId", userId);
+            
             await addDoc(collection(db, "messages"), {
-                user: user,
+                user: userId,
                 text: message,
-                imageUrl: imageUrl,
-                audioUrl: audioUrl,
                 timestamp: Date.now()
             });
+            messageInput.value = "";
         }
 
         function timeAgo(timestamp) {
@@ -68,50 +71,27 @@
                     time.textContent = timeAgo(messageData.timestamp);
                     time.classList.add("timestamp");
                     
+                    const replyButton = document.createElement("button");
+                    replyButton.textContent = "Responder";
+                    replyButton.onclick = () => replyMessage(messageData.user);
+                    
                     messageDiv.appendChild(user);
-                    if (messageData.text) messageDiv.appendChild(text);
-                    if (messageData.imageUrl) {
-                        const img = document.createElement("img");
-                        img.src = messageData.imageUrl;
-                        img.classList.add("message-image");
-                        messageDiv.appendChild(img);
-                    }
-                    if (messageData.audioUrl) {
-                        const audio = document.createElement("audio");
-                        audio.controls = true;
-                        audio.src = messageData.audioUrl;
-                        messageDiv.appendChild(audio);
-                    }
+                    messageDiv.appendChild(text);
                     messageDiv.appendChild(time);
+                    messageDiv.appendChild(replyButton);
                     messagesContainer.appendChild(messageDiv);
                 });
             });
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            loadMessages();
-        });
-
-        window.sendMessage = async () => {
+        function replyMessage(user) {
             const messageInput = document.getElementById('messageInput');
-            const fileInput = document.getElementById('fileInput');
-            const message = messageInput.value.trim();
-            
-            const userId = localStorage.getItem("userId") || "Anónimo 2000";
-            localStorage.setItem("userId", userId);
-            
-            let imageUrl = "";
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const fileRef = ref(storage, `uploads/${file.name}`);
-                await uploadBytes(fileRef, file);
-                imageUrl = await getDownloadURL(fileRef);
-            }
-            
-            await sendMessage(userId, message, imageUrl);
-            messageInput.value = "";
-            fileInput.value = "";
-        };
+            messageInput.value = `@${user} `;
+            messageInput.focus();
+        }
+
+        window.sendMessage = sendMessage;
+        window.onload = loadMessages;
     </script>
     <style>
         body {
@@ -137,12 +117,23 @@
             padding: 12px;
             background: #0f3460;
             border-radius: 10px;
+            box-shadow: 0px 0px 5px rgba(233, 69, 96, 0.3);
             text-align: left;
+            transition: transform 0.2s ease-in-out;
         }
-        .message-image {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 10px;
+        .message:hover {
+            transform: scale(1.02);
+        }
+        .username {
+            font-weight: bold;
+            color: #e94560;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #bbb;
+        }
+        .message-text {
+            margin: 5px 0;
         }
         button {
             background-color: #e94560;
@@ -151,14 +142,28 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background-color: #d13450;
+        }
+        input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
         }
     </style>
 </head>
 <body>
     <h1>Confesiones CLA</h1>
+    <audio autoplay loop>
+        <source src="https://static.wikia.nocookie.net/undertale/images/6/6c/Mus_sansdate.ogg" type="audio/ogg">
+        Tu navegador no soporta el audio.
+    </audio>
     <div class="container">
         <input type="text" id="messageInput" placeholder="Escribe tu confesión..."><br>
-        <input type="file" id="fileInput" accept="image/*"><br>
         <button onclick="sendMessage()">Enviar Confesión</button>
     </div>
     <div id="messages"></div>
