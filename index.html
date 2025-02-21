@@ -20,35 +20,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        function getUserIP() {
-            return fetch('https://api64.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => data.ip);
-        }
-
-        async function getUserName() {
-            let userName = localStorage.getItem("userName");
-            if (!userName) {
-                const ip = await getUserIP();
-                userName = prompt("Elige tu nombre de usuario:");
-                if (!userName) userName = "Anónimo";
-                localStorage.setItem("userName", userName);
-                localStorage.setItem("userIP", ip);
-            }
-            return userName;
-        }
-
         async function sendMessage() {
-            const message = document.getElementById('messageInput').value;
-            if (!message) return alert("Escribe un mensaje antes de enviar");
-
-            const userName = await getUserName();
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            const userId = localStorage.getItem("userId") || `Anónimo-${Math.floor(Math.random() * 10000)}`;
+            localStorage.setItem("userId", userId);
+            
             await addDoc(collection(db, "messages"), {
-                message: message,
-                user: userName,
+                user: userId,
+                text: message,
                 timestamp: Date.now()
             });
-            document.getElementById('messageInput').value = "";
+            messageInput.value = "";
         }
 
         function timeAgo(timestamp) {
@@ -66,30 +51,30 @@
 
         function loadMessages() {
             const messagesContainer = document.getElementById("messages");
-            const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+            const q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snapshot) => {
                 messagesContainer.innerHTML = "";
                 snapshot.forEach(doc => {
-                    const msgData = doc.data();
-                    const msgContainer = document.createElement("div");
-                    msgContainer.classList.add("message");
-
+                    const messageData = doc.data();
+                    const messageDiv = document.createElement("div");
+                    messageDiv.classList.add("message");
+                    
                     const user = document.createElement("p");
-                    user.textContent = msgData.user + ":";
-                    user.style.fontWeight = "bold";
-
+                    user.textContent = messageData.user + " dice:";
+                    user.classList.add("username");
+                    
                     const text = document.createElement("p");
-                    text.textContent = msgData.message;
-
+                    text.textContent = messageData.text;
+                    text.classList.add("message-text");
+                    
                     const time = document.createElement("span");
-                    time.textContent = timeAgo(msgData.timestamp);
-                    time.style.fontSize = "0.8em";
-                    time.style.color = "#ddd";
-
-                    msgContainer.appendChild(user);
-                    msgContainer.appendChild(text);
-                    msgContainer.appendChild(time);
-                    messagesContainer.appendChild(msgContainer);
+                    time.textContent = timeAgo(messageData.timestamp);
+                    time.classList.add("timestamp");
+                    
+                    messageDiv.appendChild(user);
+                    messageDiv.appendChild(text);
+                    messageDiv.appendChild(time);
+                    messagesContainer.appendChild(messageDiv);
                 });
             });
         }
@@ -99,59 +84,76 @@
     </script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
-            background-color: #222;
+            background-color: #1a1a2e;
             color: white;
+            padding: 20px;
         }
         h1 {
-            color: #FF4500;
+            color: #e94560;
         }
         .container {
-            max-width: 500px;
+            max-width: 600px;
             margin: auto;
             padding: 20px;
-            background: #333;
+            background: #16213e;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(255, 69, 0, 0.5);
+            box-shadow: 0px 0px 15px rgba(233, 69, 96, 0.5);
         }
         .message {
-            margin-top: 10px;
-            padding: 10px;
-            background: #444;
+            margin-top: 15px;
+            padding: 12px;
+            background: #0f3460;
             border-radius: 10px;
-            box-shadow: 0px 0px 5px rgba(255, 69, 0, 0.3);
+            box-shadow: 0px 0px 5px rgba(233, 69, 96, 0.3);
             text-align: left;
+            transition: transform 0.2s ease-in-out;
+        }
+        .message:hover {
+            transform: scale(1.02);
+        }
+        .username {
+            font-weight: bold;
+            color: #e94560;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #bbb;
+        }
+        .message-text {
+            margin: 5px 0;
         }
         button {
-            background-color: #FF4500;
+            background-color: #e94560;
             color: white;
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: background 0.3s ease;
         }
         button:hover {
-            background-color: #DD3300;
+            background-color: #d13450;
         }
-        #messages {
-            max-width: 500px;
-            margin: auto;
+        input {
+            width: calc(100% - 22px);
             padding: 10px;
-        }
-        audio {
-            display: none;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
         }
     </style>
 </head>
 <body>
     <h1>Confesiones CLA</h1>
     <audio autoplay loop>
-        <source src="tu-audio.mp3" type="audio/mpeg">
+        <source src="https://static.wikia.nocookie.net/undertale/images/6/6c/Mus_sansdate.ogg/revision/latest?cb=20160215204526&path-prefix=es" type="audio/ogg">
+        Tu navegador no soporta el audio.
     </audio>
     <div class="container">
-        <input type="text" id="messageInput" placeholder="Escribe tu confesión..."><br><br>
-        <button onclick="sendMessage()">Enviar</button>
+        <input type="text" id="messageInput" placeholder="Escribe tu confesión..."><br>
+        <button onclick="sendMessage()">Enviar Confesión</button>
     </div>
     <div id="messages"></div>
 </body>
